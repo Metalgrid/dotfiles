@@ -18,14 +18,33 @@ set $term alacritty
 # Your preferred application launcher
 # Note: pass the final command to swaymsg so that the resulting window can be opened
 # on the original workspace that the command was run on.
-set $menu dmenu_path | dmenu | xargs swaymsg exec --
+set $menu wofi -S drun
+
+set $lockscreen 'swaylock \
+            --screenshots \
+            --clock \
+            --indicator \
+            --indicator-radius 100 \
+            --indicator-thickness 7 \
+            --effect-blur 7x5 \
+            --effect-vignette 0.5:0.5 \
+            --ring-color bb00cc \
+            --key-hl-color 880033 \
+            --line-color 00000000 \
+            --inside-color 00000088 \
+            --separator-color 00000000 \
+            --grace 2 \
+            --fade-in 0.2'
+
+set $cursortheme "Mocu-White-Right"
+
 
 include /etc/sway/config-vars.d/*
 
 ### Output configuration
 #
 # Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+#output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
 #
 # Example configuration:
 #
@@ -63,19 +82,26 @@ input "type:keyboard" {
     xkb_layout us,bg(phonetic)
     xkb_options grp:win_space_toggle
 }
+
+input "type:touchpad" {
+	tap enabled
+	dwt enabled
+	natural_scroll enabled
+}
 ### Key bindings
 #
 # Basics:
 #
     # Start a terminal
-    bindsym $mod+Return exec $term
+    bindsym --to-code $mod+Return exec $term
 
     # Kill focused window
-    bindsym $mod+Shift+q kill
+    bindsym --to-code $mod+Shift+q kill
 
     # Start your launcher
     #bindsym $mod+d exec $menu
-    bindsym $mod+d exec wofi -S drun
+    bindsym --to-code $mod+d exec $menu
+    bindsym Print exec grimshot --notify copy area
 
     # Drag floating windows by holding down $mod and left mouse button.
     # Resize them with right mouse button + $mod.
@@ -146,16 +172,16 @@ input "type:keyboard" {
     # You can "split" the current object of your focus with
     # $mod+b or $mod+v, for horizontal and vertical splits
     # respectively.
-    bindsym $mod+b splith
-    bindsym $mod+v splitv
+    bindsym --to-code $mod+b splith
+    bindsym --to-code $mod+v splitv
 
     # Switch the current container between different layout styles
-    bindsym $mod+s layout stacking
-    bindsym $mod+w layout tabbed
-    bindsym $mod+e layout toggle split
+    bindsym --to-code $mod+s layout stacking
+    bindsym --to-code $mod+w layout tabbed
+    bindsym --to-code $mod+e layout toggle split
 
     # Make the current focus fullscreen
-    bindsym $mod+f fullscreen
+    bindsym  $mod+f fullscreen
 
     # Toggle the current focus between tiling and floating mode
     bindsym $mod+Shift+space floating toggle
@@ -200,7 +226,7 @@ mode "resize" {
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
-bindsym $mod+r mode "resize"
+bindsym --to-code $mod+r mode "resize"
 
 #
 # Status Bar:
@@ -221,17 +247,23 @@ bindsym $mod+r mode "resize"
 #}
 
 include /etc/sway/config.d/*
+include ~/.config/sway/config.d/*
 
-#output Virtual-1 pos 0 0 res 1920x1200
 xwayland enable
 
-font pango:SF Pro 12
 
 default_border pixel 2
 gaps inner 4
 gaps outer 1
 
-seat * xcursor_theme "Graphite dark nord Cursors"
-exec swaykbdd
-exec pulseaudio --start
-exec waybar
+seat * xcursor_theme $cursortheme
+exec {
+	swaykbdd
+	waybar
+	gnome-keyring-daemon -sd
+	swayidle -w \
+        timeout 300 $lockscreen
+        timeout 600 'swaymsg "output * dpms off"' \
+        resume 'swaymsg "output * dpms on"' \
+        before-sleep $lockscreen
+}
